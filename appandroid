@@ -1,0 +1,92 @@
+package com.example.myapplication;
+import android.app.Activity;
+import android.os.Bundle;
+import android.util.Log;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import android.widget.Toast;
+
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.Volley;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class MainActivity extends Activity {
+    private static final String TAG = "MainActivity";
+    private static final String SERVER_URL = "http://10.106.1.24:3000/create-preference"; // Cambia esto según sea necesario
+    private WebView webView;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        webView = findViewById(R.id.webview);
+        webView.getSettings().setJavaScriptEnabled(true);
+        webView.setWebViewClient(new WebViewClient());
+
+        // Crea una instancia de RequestQueue
+        RequestQueue requestQueue = Volley.newRequestQueue(this);
+
+        // Configura el objeto JSON para la solicitud
+        JSONObject requestBody = new JSONObject();
+
+        // Aquí puedes agregar parámetros si es necesario, pero en este caso es una solicitud vacía
+        try {
+            requestBody.put("items", new JSONObject());
+            requestBody.put("back_urls", new JSONObject());
+            requestBody.put("auto_return", "approved");
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        // Crea una solicitud POST
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(
+                Request.Method.POST,
+                SERVER_URL,
+                requestBody,
+                new Response.Listener<JSONObject>() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        try {
+                            String initPoint = response.getString("init_point");
+                            Log.d(TAG, "URL de preferencia: " + initPoint);
+                            Toast.makeText(MainActivity.this, "URL de preferencia: " + initPoint, Toast.LENGTH_LONG).show();
+
+                            // Carga la URL en el WebView
+                            webView.loadUrl(initPoint);
+
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                },
+                new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        Log.e(TAG, "Error: " + error.getMessage());
+                        Toast.makeText(MainActivity.this, "Error: " + error.getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                }
+        ) {
+            @Override
+            public Map<String, String> getHeaders() {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Content-Type", "application/json");
+                return headers;
+            }
+        };
+
+        // Añade la solicitud a la cola
+        requestQueue.add(jsonObjectRequest);
+    }
+}
+
